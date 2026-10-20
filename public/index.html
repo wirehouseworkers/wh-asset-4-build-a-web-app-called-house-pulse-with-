@@ -1,17 +1,572 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Build a web app called House Pulse with a companion MCP server. Onboarding asks for home age, HVAC type, roof type, wate</title>
-  <style>
-    body { font-family: -apple-system, system-ui, sans-serif; max-width: 640px; margin: 15vh auto; padding: 0 1.5rem; color: #1a1a1a; text-align: center; }
-    h1 { font-size: 1.6rem; }
-    p { color: #666; }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>House Pulse — Home Maintenance Tracker</title>
+<style>
+  :root{
+    --bg:#f6f7f5; --card:#ffffff; --ink:#1a1a1a; --muted:#666;
+    --brand:#2a6f5e; --brand-dark:#1d4f42; --accent:#e8a33d; --danger:#c14545;
+    --border:#e3e3e0; --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    margin:0; background:var(--bg); color:var(--ink);
+  }
+  header{
+    background:linear-gradient(135deg,var(--brand),var(--brand-dark));
+    color:#fff; padding:1.6rem 1.2rem; text-align:center;
+  }
+  header h1{margin:0; font-size:1.6rem; letter-spacing:.5px;}
+  header .pulse{display:inline-block; animation:pulse 2s infinite;}
+  @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.5;}}
+  header p{margin:.3rem 0 0; opacity:.9; font-size:.9rem;}
+
+  nav.tabs{
+    display:flex; justify-content:center; gap:.5rem; flex-wrap:wrap;
+    background:#fff; border-bottom:1px solid var(--border); padding:.6rem;
+    position:sticky; top:0; z-index:10;
+  }
+  nav.tabs button{
+    border:none; background:transparent; padding:.5rem 1rem; border-radius:999px;
+    cursor:pointer; font-size:.9rem; color:var(--muted); font-weight:600;
+  }
+  nav.tabs button.active{background:var(--brand); color:#fff;}
+
+  main{max-width:860px; margin:0 auto; padding:1.2rem;}
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+    padding:1.2rem; margin-bottom:1rem; box-shadow:0 1px 3px rgba(0,0,0,.03);
+  }
+  .card h2{margin-top:0; font-size:1.1rem;}
+  .card h3{margin:.2rem 0 .6rem; font-size:1rem; color:var(--brand-dark);}
+
+  form .field{margin-bottom:1rem;}
+  label{display:block; font-weight:600; font-size:.85rem; margin-bottom:.3rem;}
+  select, input[type=text], input[type=email], input[type=tel], textarea{
+    width:100%; padding:.6rem .7rem; border:1px solid var(--border); border-radius:10px;
+    font-size:.95rem; background:#fdfdfc;
+  }
+  button.primary{
+    background:var(--brand); color:#fff; border:none; padding:.7rem 1.2rem;
+    border-radius:10px; font-size:.95rem; font-weight:600; cursor:pointer;
+  }
+  button.primary:hover{background:var(--brand-dark);}
+  button.ghost{
+    background:#fff; border:1px solid var(--border); padding:.5rem 1rem; border-radius:10px;
+    cursor:pointer; font-size:.85rem; color:var(--ink);
+  }
+  button.small{padding:.35rem .7rem; font-size:.8rem; border-radius:8px;}
+
+  .grid-2{display:grid; grid-template-columns:1fr 1fr; gap:1rem;}
+  @media(max-width:560px){ .grid-2{grid-template-columns:1fr;} }
+
+  .task{
+    display:flex; align-items:flex-start; gap:.8rem; padding:.8rem; border:1px solid var(--border);
+    border-radius:12px; margin-bottom:.6rem; background:#fdfdfc;
+  }
+  .task .icon{font-size:1.4rem;}
+  .task .info{flex:1;}
+  .task .info strong{display:block; font-size:.95rem;}
+  .task .info span.due{font-size:.8rem; color:var(--muted);}
+  .task.overdue{border-color:var(--danger); background:#fdf2f2;}
+  .task.overdue span.due{color:var(--danger); font-weight:700;}
+  .task.soon{border-color:var(--accent); background:#fdf7ea;}
+  .task-actions{display:flex; flex-direction:column; gap:.4rem; align-items:flex-end;}
+  .tag{
+    display:inline-block; font-size:.7rem; padding:.1rem .5rem; border-radius:999px;
+    background:#e9f3ef; color:var(--brand-dark); margin-right:.3rem;
+  }
+  .thumb{width:40px; height:40px; object-fit:cover; border-radius:8px; border:1px solid var(--border);}
+
+  .log-item{font-size:.85rem; padding:.5rem .3rem; border-bottom:1px dashed var(--border); color:var(--muted);}
+  .log-item:last-child{border-bottom:none;}
+
+  pre.code{
+    background:#0f1715; color:#aee6d3; padding:1rem; border-radius:10px; font-size:.78rem;
+    overflow-x:auto; line-height:1.5;
+  }
+  .hidden{display:none !important;}
+  .muted{color:var(--muted); font-size:.85rem;}
+  .result-box{
+    background:#eef7f3; border:1px solid #cfe9df; border-radius:10px; padding:.8rem; margin-top:.8rem;
+    font-size:.9rem; white-space:pre-wrap;
+  }
+  footer{text-align:center; color:var(--muted); font-size:.8rem; padding:2rem 1rem;}
+  .inline-form{display:flex; gap:.5rem; flex-wrap:wrap;}
+  .inline-form select, .inline-form input{flex:1; min-width:140px;}
+</style>
 </head>
 <body>
-  <h1>Build a web app called House Pulse with a companion MCP server. Onboarding asks for home age, HVAC type, roof type, wate</h1>
-  <p>Provisioned by the WiredHowse Co-op console — build request #4.</p>
+
+<header>
+  <h1><span class="pulse">💓</span> House Pulse</h1>
+  <p>Keep your home healthy — maintenance, reminders, and an MCP server for your AI assistant.</p>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="onboard" class="active">Onboarding</button>
+  <button data-tab="dashboard">Dashboard</button>
+  <button data-tab="reminders">Reminders</button>
+  <button data-tab="mcp">MCP Server</button>
+</nav>
+
+<main>
+
+  <!-- ONBOARDING -->
+  <section id="tab-onboard">
+    <div class="card">
+      <h2>Tell us about your home</h2>
+      <p class="muted">This builds a custom maintenance schedule. You can edit these details anytime.</p>
+      <form id="onboardForm">
+        <div class="grid-2">
+          <div class="field">
+            <label>Home age</label>
+            <select id="homeAge" required>
+              <option value="">Select…</option>
+              <option value="0-5">0–5 years</option>
+              <option value="6-15">6–15 years</option>
+              <option value="16-30">16–30 years</option>
+              <option value="31-99">30+ years</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>HVAC type</label>
+            <select id="hvac" required>
+              <option value="">Select…</option>
+              <option value="forced-air">Forced air (furnace/AC)</option>
+              <option value="heat-pump">Heat pump</option>
+              <option value="boiler">Boiler / radiant</option>
+              <option value="ductless">Ductless mini-split</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Roof type</label>
+            <select id="roof" required>
+              <option value="">Select…</option>
+              <option value="asphalt-shingle">Asphalt shingle</option>
+              <option value="metal">Metal</option>
+              <option value="tile">Tile</option>
+              <option value="flat">Flat / membrane</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Water heater</label>
+            <select id="waterHeater" required>
+              <option value="">Select…</option>
+              <option value="tank">Tank</option>
+              <option value="tankless">Tankless</option>
+              <option value="hybrid">Hybrid / heat pump</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Climate zone</label>
+            <select id="climate" required>
+              <option value="">Select…</option>
+              <option value="humid">Humid / coastal</option>
+              <option value="dry">Hot & dry</option>
+              <option value="cold">Cold / snowy</option>
+              <option value="mild">Mild / temperate</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="primary">Generate my maintenance schedule</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="tab-dashboard" class="hidden">
+    <div class="card" id="profileSummary"></div>
+
+    <div class="card">
+      <h2>Maintenance schedule</h2>
+      <p class="muted">Tasks adjust automatically — when you mark something done, the next due date is calculated from the day you actually completed it.</p>
+      <div id="taskList"></div>
+    </div>
+  </section>
+
+  <!-- REMINDERS -->
+  <section id="tab-reminders" class="hidden">
+    <div class="card">
+      <h2>Reminder settings</h2>
+      <p class="muted">House Pulse runs a daily job that checks for tasks due soon and sends an email or SMS. This demo simulates that job in your browser.</p>
+      <div class="grid-2">
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="contactEmail" placeholder="you@example.com">
+        </div>
+        <div class="field">
+          <label>Phone (SMS)</label>
+          <input type="tel" id="contactPhone" placeholder="+1 555 123 4567">
+        </div>
+      </div>
+      <button class="primary" id="saveContact">Save contact info</button>
+      <button class="ghost" id="runDaily" style="margin-left:.5rem;">▶ Simulate daily reminder job</button>
+      <div id="contactSaved" class="muted" style="margin-top:.5rem;"></div>
+    </div>
+    <div class="card">
+      <h3>Notification log</h3>
+      <div id="notifLog"><p class="muted">No notifications yet — run the daily job above.</p></div>
+    </div>
+  </section>
+
+  <!-- MCP -->
+  <section id="tab-mcp" class="hidden">
+    <div class="card">
+      <h2>Companion MCP Server</h2>
+      <p class="muted">House Pulse exposes an MCP (Model Context Protocol) server so any AI assistant — Claude, ChatGPT, or your own agent — can check what's due and mark tasks complete on your behalf.</p>
+      <pre class="code">{
+  "mcpServers": {
+    "house-pulse": {
+      "url": "https://api.housepulse.app/mcp",
+      "tools": [
+        "get_due_tasks(month?: string)",
+        "get_task_history(task_id: string)",
+        "mark_task_done(task_id: string, completed_on?: date, photo_url?: string)",
+        "get_home_profile()"
+      ]
+    }
+  }
+}</pre>
+      <h3>Try it (simulated locally)</h3>
+      <p class="muted">This box mimics the <code>get_due_tasks</code> tool using the schedule you generated above.</p>
+      <div class="inline-form">
+        <input type="text" id="mcpQuery" placeholder='e.g. "What's due at my house this month?"'>
+        <button class="primary" id="mcpAsk">Ask</button>
+      </div>
+      <div id="mcpResult" class="result-box hidden"></div>
+
+      <h3 style="margin-top:1.2rem;">Mark a task done via MCP</h3>
+      <div class="inline-form">
+        <select id="mcpTaskSelect"></select>
+        <button class="primary small" id="mcpMarkDone">mark_task_done()</button>
+      </div>
+      <div id="mcpMarkResult" class="result-box hidden"></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>House Pulse — provisioned by the WiredHowse Co-op console — build request #4.</footer>
+
+<script>
+(function(){
+  const DAY = 24*60*60*1000;
+  const todayStr = () => new Date().toISOString().slice(0,10);
+  const addDays = (dateStr, days) => {
+    const d = new Date(dateStr + 'T00:00:00');
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0,10);
+  };
+  const fmt = (dateStr) => new Date(dateStr+'T00:00:00').toLocaleDateString(undefined,{month:'short', day:'numeric', year:'numeric'});
+
+  const store = {
+    getProfile: () => JSON.parse(localStorage.getItem('hp_profile') || 'null'),
+    setProfile: (p) => localStorage.setItem('hp_profile', JSON.stringify(p)),
+    getTasks: () => JSON.parse(localStorage.getItem('hp_tasks') || 'null'),
+    setTasks: (t) => localStorage.setItem('hp_tasks', JSON.stringify(t)),
+    getContact: () => JSON.parse(localStorage.getItem('hp_contact') || '{}'),
+    setContact: (c) => localStorage.setItem('hp_contact', JSON.stringify(c)),
+    getLog: () => JSON.parse(localStorage.getItem('hp_log') || '[]'),
+    setLog: (l) => localStorage.setItem('hp_log', JSON.stringify(l)),
+  };
+
+  function buildTasks(profile){
+    const tasks = [];
+    const push = (name, category, icon, intervalDays, startOffset) => {
+      tasks.push({
+        id: name.toLowerCase().replace(/[^a-z0-9]+/g,'-'),
+        name, category, icon, intervalDays,
+        dueDate: addDays(todayStr(), startOffset),
+        history: []
+      });
+    };
+
+    push('Replace HVAC filter', 'HVAC', '🌬️', profile.hvac === 'forced-air' ? 60 : 90, 20);
+    push('HVAC seasonal service', 'HVAC', '🔧', 180, 45);
+    push('Clean gutters', 'Roof', '🍂', profile.climate === 'humid' ? 90 : 180, 30);
+    push('Roof inspection', 'Roof', '🏠', profile.roof === 'asphalt-shingle' ? 180 : 365, 60);
+    push('Test smoke & CO alarms', 'Safety', '🚨', 180, 10);
+    push('Replace smoke alarm batteries', 'Safety', '🔋', 365, 90);
+
+    if (profile.waterHeater === 'tankless') {
+      push('Descale tankless water heater', 'Water Heater', '💧', 365, 75);
+    } else {
+      push('Flush water heater tank', 'Water Heater', '💧', 365, 50);
+      push('Check anode rod', 'Water Heater', '⚙️', 730, 120);
+    }
+
+    push('Clean dryer vent', 'Appliance', '🧺', 365, 40);
+
+    if (profile.homeAge === '16-30' || profile.homeAge === '31-99') {
+      push('Inspect plumbing for aging pipes', 'Plumbing', '🪠', 365, 100);
+    }
+    if (profile.climate === 'cold') {
+      push('Winterize exterior faucets', 'Seasonal', '❄️', 365, 25);
+    }
+    if (profile.roof === 'flat') {
+      push('Check flat roof drainage', 'Roof', '🌧️', 180, 55);
+    }
+    return tasks;
+  }
+
+  function statusOf(task){
+    const diff = (new Date(task.dueDate) - new Date(todayStr())) / DAY;
+    if (diff < 0) return 'overdue';
+    if (diff <= 14) return 'soon';
+    return 'ok';
+  }
+
+  // ---------- rendering ----------
+  function renderProfileSummary(){
+    const p = store.getProfile();
+    const el = document.getElementById('profileSummary');
+    if(!p){ el.innerHTML=''; return; }
+    el.innerHTML = `
+      <h2>Your home profile</h2>
+      <span class="tag">Age: ${p.homeAge}</span>
+      <span class="tag">HVAC: ${p.hvac}</span>
+      <span class="tag">Roof: ${p.roof}</span>
+      <span class="tag">Water heater: ${p.waterHeater}</span>
+      <span class="tag">Climate: ${p.climate}</span>
+      <div style="margin-top:.8rem;">
+        <button class="ghost small" id="editProfileBtn">Edit profile</button>
+      </div>
+    `;
+    document.getElementById('editProfileBtn').onclick = () => switchTab('onboard');
+  }
+
+  function renderTasks(){
+    const tasks = store.getTasks() || [];
+    const list = document.getElementById('taskList');
+    if(!tasks.length){ list.innerHTML = '<p class="muted">No schedule yet — complete onboarding first.</p>'; return; }
+
+    const sorted = [...tasks].sort((a,b)=> new Date(a.dueDate) - new Date(b.dueDate));
+    list.innerHTML = sorted.map(t => {
+      const st = statusOf(t);
+      const lastPhoto = t.history.length ? t.history[t.history.length-1].photo : null;
+      return `
+      <div class="task ${st}" data-id="${t.id}">
+        <div class="icon">${t.icon}</div>
+        <div class="info">
+          <strong>${t.name}</strong>
+          <span class="tag">${t.category}</span>
+          <span class="due">${st === 'overdue' ? 'Overdue — was due' : 'Due'} ${fmt(t.dueDate)}</span>
+          ${t.history.length ? `<div class="muted" style="margin-top:.3rem;">Last done: ${fmt(t.history[t.history.length-1].date)}</div>` : ''}
+        </div>
+        <div class="task-actions">
+          ${lastPhoto ? `<img src="${lastPhoto}" class="thumb" title="Last completion photo">` : ''}
+          <button class="primary small" data-action="done" data-id="${t.id}">Mark done</button>
+          <input type="file" accept="image/*" capture="environment" data-photo="${t.id}" style="display:none;">
+        </div>
+      </div>`;
+    }).join('');
+
+    list.querySelectorAll('[data-action="done"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.id;
+        const fileInput = list.querySelector(`[data-photo="${id}"]`);
+        fileInput.onchange = (e) => completeTask(id, e.target.files[0]);
+        fileInput.click();
+        // also allow completing without a photo via a short delay fallback
+        setTimeout(() => {
+          if (!fileInput.value) {
+            // no file chosen interaction yet, do nothing — user may still pick
+          }
+        }, 300);
+      });
+    });
+
+    // Add a "skip photo" option via double path: attach a small link under each mark-done button
+    list.querySelectorAll('.task-actions').forEach(actionsDiv => {
+      const id = actionsDiv.closest('.task').dataset.id;
+      if(!actionsDiv.querySelector('.skip-link')){
+        const link = document.createElement('button');
+        link.textContent = 'done (no photo)';
+        link.className = 'ghost small skip-link';
+        link.style.fontSize = '.7rem';
+        link.addEventListener('click', () => completeTask(id, null));
+        actionsDiv.appendChild(link);
+      }
+    });
+  }
+
+  function completeTask(id, file){
+    const tasks = store.getTasks();
+    const task = tasks.find(t => t.id === id);
+    if(!task) return;
+    const completedOn = todayStr();
+
+    const finish = (photoDataUrl) => {
+      task.history.push({ date: completedOn, photo: photoDataUrl || null });
+      task.dueDate = addDays(completedOn, task.intervalDays);
+      store.setTasks(tasks);
+      renderTasks();
+      populateMcpTaskSelect();
+      log(`✅ "${task.name}" marked done on ${fmt(completedOn)}. Next due ${fmt(task.dueDate)}.`);
+    };
+
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => finish(e.target.result);
+      reader.readAsDataURL(file);
+    } else {
+      finish(null);
+    }
+  }
+
+  // ---------- reminders ----------
+  function log(message){
+    const l = store.getLog();
+    l.unshift({ time: new Date().toLocaleString(), message });
+    store.setLog(l.slice(0,30));
+    renderLog();
+  }
+
+  function renderLog(){
+    const l = store.getLog();
+    const el = document.getElementById('notifLog');
+    if(!l.length){ el.innerHTML = '<p class="muted">No notifications yet — run the daily job above.</p>'; return; }
+    el.innerHTML = l.map(item => `<div class="log-item"><strong>${item.time}</strong> — ${item.message}</div>`).join('');
+  }
+
+  function runDailyJob(){
+    const tasks = store.getTasks() || [];
+    const contact = store.getContact();
+    if (!tasks.length){ log('No schedule found — complete onboarding first.'); return; }
+    const dueSoon = tasks.filter(t => statusOf(t) !== 'ok');
+    if (!dueSoon.length){
+      log('Daily check ran: nothing due in the next 14 days. 🎉');
+      return;
+    }
+    dueSoon.forEach(t => {
+      const channel = contact.email ? `email to ${contact.email}` : (contact.phone ? `SMS to ${contact.phone}` : 'no contact info set — showed in-app only');
+      const verb = statusOf(t) === 'overdue' ? 'is OVERDUE' : 'is due soon';
+      log(`🔔 Reminder sent via ${channel}: "${t.name}" ${verb} (${fmt(t.dueDate)}).`);
+    });
+  }
+
+  // ---------- MCP simulation ----------
+  function populateMcpTaskSelect(){
+    const sel = document.getElementById('mcpTaskSelect');
+    const tasks = store.getTasks() || [];
+    sel.innerHTML = tasks.map(t => `<option value="${t.id}">${t.name} (due ${fmt(t.dueDate)})</option>`).join('') || '<option value="">No tasks yet</option>';
+  }
+
+  function mcpGetDueTasks(){
+    const tasks = store.getTasks() || [];
+    if(!tasks.length) return 'No home profile found. Run onboarding first.';
+    const now = new Date();
+    const dueThisMonth = tasks.filter(t => {
+      const d = new Date(t.dueDate);
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+    const overdue = tasks.filter(t => statusOf(t) === 'overdue');
+    let out = `get_due_tasks() →\n\n`;
+    out += overdue.length ? `Overdue (${overdue.length}):\n` + overdue.map(t=>`  • ${t.name} — was due ${fmt(t.dueDate)}`).join('\n') + '\n\n' : '';
+    out += `Due this month (${dueThisMonth.length}):\n`;
+    out += dueThisMonth.length ? dueThisMonth.map(t=>`  • ${t.name} — due ${fmt(t.dueDate)}`).join('\n') : '  (nothing else this month)';
+    return out;
+  }
+
+  // ---------- tabs ----------
+  function switchTab(name){
+    document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+    ['onboard','dashboard','reminders','mcp'].forEach(t => {
+      document.getElementById('tab-'+t).classList.toggle('hidden', t !== name);
+    });
+  }
+
+  document.getElementById('tabs').addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-tab]');
+    if(!btn) return;
+    switchTab(btn.dataset.tab);
+  });
+
+  // ---------- form ----------
+  document.getElementById('onboardForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const profile = {
+      homeAge: document.getElementById('homeAge').value,
+      hvac: document.getElementById('hvac').value,
+      roof: document.getElementById('roof').value,
+      waterHeater: document.getElementById('waterHeater').value,
+      climate: document.getElementById('climate').value,
+    };
+    store.setProfile(profile);
+    store.setTasks(buildTasks(profile));
+    renderProfileSummary();
+    renderTasks();
+    populateMcpTaskSelect();
+    switchTab('dashboard');
+  });
+
+  document.getElementById('saveContact').addEventListener('click', () => {
+    const contact = {
+      email: document.getElementById('contactEmail').value.trim(),
+      phone: document.getElementById('contactPhone').value.trim(),
+    };
+    store.setContact(contact);
+    document.getElementById('contactSaved').textContent = 'Saved ✓';
+    setTimeout(()=> document.getElementById('contactSaved').textContent = '', 2000);
+  });
+
+  document.getElementById('runDaily').addEventListener('click', runDailyJob);
+
+  document.getElementById('mcpAsk').addEventListener('click', () => {
+    const box = document.getElementById('mcpResult');
+    box.classList.remove('hidden');
+    box.textContent = mcpGetDueTasks();
+  });
+
+  document.getElementById('mcpMarkDone').addEventListener('click', () => {
+    const sel = document.getElementById('mcpTaskSelect');
+    const id = sel.value;
+    const box = document.getElementById('mcpMarkResult');
+    box.classList.remove('hidden');
+    if(!id){ box.textContent = 'No task selected.'; return; }
+    const tasks = store.getTasks();
+    const task = tasks.find(t => t.id === id);
+    const completedOn = todayStr();
+    task.history.push({ date: completedOn, photo: null });
+    task.dueDate = addDays(completedOn, task.intervalDays);
+    store.setTasks(tasks);
+    box.textContent = `mark_task_done("${task.id}") →\n\n"${task.name}" marked complete on ${fmt(completedOn)}.\nNext due date recalculated to ${fmt(task.dueDate)}.`;
+    renderTasks();
+    populateMcpTaskSelect();
+    log(`🤖 MCP assistant marked "${task.name}" done. Next due ${fmt(task.dueDate)}.`);
+  });
+
+  // ---------- init ----------
+  function init(){
+    const profile = store.getProfile();
+    const contact = store.getContact();
+    if (contact.email) document.getElementById('contactEmail').value = contact.email;
+    if (contact.phone) document.getElementById('contactPhone').value = contact.phone;
+
+    if (profile) {
+      // repopulate onboarding fields for editing
+      document.getElementById('homeAge').value = profile.homeAge || '';
+      document.getElementById('hvac').value = profile.hvac || '';
+      document.getElementById('roof').value = profile.roof || '';
+      document.getElementById('waterHeater').value = profile.waterHeater || '';
+      document.getElementById('climate').value = profile.climate || '';
+
+      if (!store.getTasks()) store.setTasks(buildTasks(profile));
+      renderProfileSummary();
+      renderTasks();
+      populateMcpTaskSelect();
+      switchTab('dashboard');
+    }
+    renderLog();
+  }
+
+  init();
+})();
+</script>
+
 </body>
 </html>
